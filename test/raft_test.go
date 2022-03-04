@@ -116,6 +116,56 @@ func TestRaftFollowersGetUpdates(t *testing.T) {
 	}
 }
 
+// leader1 gets a request while all other nodes are crashed.
+// the crashed nodes recover.
+func TestRaftRecoverable(t *testing.T) {
+	//Setup
+	cfgPath := "./config_files/3nodes.txt"
+	test := InitTest(cfgPath, "8080")
+	defer EndTest(test)
+
+	//TEST
+	leaderIdx := 1
+	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
+	test.Clients[0].Crash(test.Context, &emptypb.Empty{})
+	test.Clients[2].Crash(test.Context, &emptypb.Empty{})
+
+	// leader1 gets a request while all other nodes are crashed.
+	filemeta1 := &surfstore.FileMetaData{
+		Filename:      "testFile1",
+		Version:       1,
+		BlockHashList: nil,
+	}
+	go test.Clients[leaderIdx].UpdateFile(test.Context, filemeta1)
+
+	// the crashed nodes recover.
+	test.Clients[0].Restore(test.Context, &emptypb.Empty{})
+	test.Clients[2].Restore(test.Context, &emptypb.Empty{})
+	test.Clients[leaderIdx].SendHeartbeat(test.Context, &emptypb.Empty{})
+
+	// The log should be replicated and applied
+	goldenMeta := surfstore.NewMetaStore("")
+	goldenMeta.UpdateFile(test.Context, filemeta1)
+	goldenLog := make([]*surfstore.UpdateOperation, 0)
+	goldenLog = append(goldenLog, &surfstore.UpdateOperation{
+		Term:         1,
+		FileMetaData: filemeta1,
+	})
+
+	for _, server := range test.Clients {
+		state, _ := server.GetInternalState(test.Context, &emptypb.Empty{})
+		t.Log(state.Log)
+		if !SameLog(goldenLog, state.Log) {
+			t.Log("Logs do not match")
+			t.Fail()
+		}
+		if !SameMeta(goldenMeta.FileMetaMap, state.MetaMap.FileInfoMap) {
+			t.Log("MetaStore state is not correct")
+			t.Fail()
+		}
+	}
+}
+
 // leader1 gets several requests while all other nodes are crashed.
 // leader1 crashes.
 // all other nodes are restored.
