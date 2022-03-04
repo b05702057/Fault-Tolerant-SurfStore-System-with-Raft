@@ -137,6 +137,19 @@ func (s *RaftSurfstore) UpdateFile(ctx context.Context, filemeta *FileMetaData) 
 	// The code resumes when it get the message.
 	success := <-commited // block until a majority of nodes work
 	if success {
+		if !IsLeader(s) {
+			return nil, ERR_NOT_LEADER
+		}
+
+		// The server is crashed.
+		s.isCrashedMutex.Lock()
+		if s.isCrashed {
+			s.isCrashedMutex.Unlock()
+			return nil, ERR_SERVER_CRASHED
+		}
+		s.isCrashedMutex.Unlock()
+		// Note that a server may crash and still consider itself a leader.
+
 		return s.metaStore.UpdateFile(ctx, filemeta)
 	}
 
