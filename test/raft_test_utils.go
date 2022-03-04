@@ -3,12 +3,14 @@ package SurfTest
 import (
 	context "context"
 	"cse224/proj5/pkg/surfstore"
-	"google.golang.org/grpc"
 	"log"
 	"os"
 	"os/exec"
 	"strconv"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type TestInfo struct {
@@ -31,7 +33,7 @@ func InitTest(cfgPath, blockStorePort string) TestInfo {
 	conns := make([]*grpc.ClientConn, 0)
 	clients := make([]surfstore.RaftSurfstoreClient, 0)
 	for _, addr := range cfg {
-		conn, err := grpc.Dial(addr, grpc.WithInsecure())
+		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.Fatal("Error connecting to clients ", err)
 		}
@@ -85,7 +87,7 @@ func InitBlockStore(blockStorePort string) *exec.Cmd {
 func InitRaftServers(cfgPath string) []*exec.Cmd {
 	cfg := surfstore.LoadRaftConfigFile(cfgPath)
 	cmdList := make([]*exec.Cmd, 0)
-	for idx, _ := range cfg {
+	for idx := range cfg {
 		cmd := exec.Command("_bin/SurfstoreRaftServerExec", "-f", cfgPath, "-i", strconv.Itoa(idx), "-b", "localhost:8080")
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout

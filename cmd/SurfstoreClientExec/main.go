@@ -32,6 +32,7 @@ const BLOCK_USAGE = "Size of the blocks used to fragment files"
 const EX_USAGE int = 64
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	// Custom flag Usage message
 	flag.Usage = func() {
 		w := flag.CommandLine.Output()
