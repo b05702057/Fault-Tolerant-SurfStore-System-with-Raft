@@ -45,9 +45,9 @@ func (m *MetaStore) UpdateFile(ctx context.Context, fileMetaData *FileMetaData) 
 			return &output, errors.New("wrong version")
 		}
 	}
-
 	m.FileMetaMap[fileMetaData.Filename] = fileMetaData // update the meta data
 	PrintMetaMap(m.FileMetaMap)
+
 	return &output, nil
 }
 

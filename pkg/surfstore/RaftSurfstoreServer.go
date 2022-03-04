@@ -71,6 +71,15 @@ func (s *RaftSurfstore) GetFileInfoMap(ctx context.Context, empty *emptypb.Empty
 		return nil, ERR_NOT_LEADER
 	}
 
+	// The server is crashed.
+	s.isCrashedMutex.Lock()
+	if s.isCrashed {
+		s.isCrashedMutex.Unlock()
+		return nil, ERR_SERVER_CRASHED
+	}
+	s.isCrashedMutex.Unlock()
+	// Note that a server may crash and still consider itself a leader.
+
 	// check if a mjority of the nodes work
 	for {
 		// block until a majority of the servers work
@@ -85,6 +94,16 @@ func (s *RaftSurfstore) GetBlockStoreAddr(ctx context.Context, empty *emptypb.Em
 	if !IsLeader(s) {
 		return nil, ERR_NOT_LEADER
 	}
+
+	// The server is crashed.
+	s.isCrashedMutex.Lock()
+	if s.isCrashed {
+		s.isCrashedMutex.Unlock()
+		return nil, ERR_SERVER_CRASHED
+	}
+	s.isCrashedMutex.Unlock()
+	// Note that a server may crash and still consider itself a leader.
+
 	return &BlockStoreAddr{Addr: s.metaStore.BlockStoreAddr}, nil
 }
 
@@ -93,6 +112,15 @@ func (s *RaftSurfstore) UpdateFile(ctx context.Context, filemeta *FileMetaData) 
 	if !IsLeader(s) {
 		return nil, ERR_NOT_LEADER
 	}
+
+	// The server is crashed.
+	s.isCrashedMutex.Lock()
+	if s.isCrashed {
+		s.isCrashedMutex.Unlock()
+		return nil, ERR_SERVER_CRASHED
+	}
+	s.isCrashedMutex.Unlock()
+	// Note that a server may crash and still consider itself a leader.
 
 	// check of a mjority of the nodes work
 	for {
@@ -204,12 +232,18 @@ func (s *RaftSurfstore) SetLeader(ctx context.Context, _ *emptypb.Empty) (*Succe
 	}
 	s.isCrashedMutex.Unlock()
 
-	// make it the leader
+	// Make it the leader
 	s.isLeaderMutex.Lock()
 	s.isLeader = true
 	s.isLeaderMutex.Unlock()
 
 	s.term++ // a new term starts with a new leader
+
+	// If the server is a new leader, its pendingCommit may be empty, but the commitIdx may > -1
+	for i := len(s.pendingCommits); i < int(s.commitIndex)+1; i++ {
+		commited := make(chan bool)
+		s.pendingCommits = append(s.pendingCommits, commited) // make pendingCommits long enough
+	}
 
 	// Initialize with empty lists
 	var nextIndex [0]int

@@ -88,13 +88,11 @@ func (surfClient *RPCClient) GetFileInfoMap(serverFileInfoMap *map[string]*FileM
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		fileInfoMap, err := c.GetFileInfoMap(ctx, &emptypb.Empty{})
-		if err == ERR_NOT_LEADER {
+		if err != nil {
 			continue // try next server
 		}
-		if err == nil {
-			*serverFileInfoMap = fileInfoMap.FileInfoMap // get the map successfully
-		}
-		return err
+		*serverFileInfoMap = fileInfoMap.FileInfoMap // get the map successfully
+		return nil
 	}
 	return ERR_NOT_LEADER // cannot find a leader at all (not possible in the test cases)
 }
@@ -113,10 +111,10 @@ func (surfClient *RPCClient) UpdateFile(fileMetaData *FileMetaData, latestVersio
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		_, err = c.UpdateFile(ctx, fileMetaData)
-		if err == ERR_NOT_LEADER {
-			continue // try next server
+		if err != nil {
+			continue // try next server (not leader/crashed)
 		}
-		return err // nil or other errors
+		return nil
 	}
 	return ERR_NOT_LEADER // cannot find a leader at all (not possible in the test cases)
 }
@@ -136,13 +134,11 @@ func (surfClient *RPCClient) GetBlockStoreAddr(blockStoreAddr *string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		addr, err := c.GetBlockStoreAddr(ctx, &emptypb.Empty{})
-		if err == ERR_NOT_LEADER {
+		if err != nil {
 			continue // try next server
 		}
-		if err == nil {
-			*blockStoreAddr = addr.Addr
-		}
-		return err
+		*blockStoreAddr = addr.Addr
+		return nil
 	}
 	return ERR_NOT_LEADER
 }

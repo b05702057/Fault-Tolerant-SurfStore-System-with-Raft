@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -144,5 +145,20 @@ func PrintMetaMap(metaMap map[string]*FileMetaData) {
 	}
 
 	log.Println("---------END PRINT MAP--------")
+
+}
+
+func FmtMetaMap(metaMap map[string]*FileMetaData) {
+
+	fmt.Println("--------BEGIN PRINT MAP--------")
+
+	for _, filemeta := range metaMap {
+		fmt.Println("\t", filemeta.Filename, filemeta.Version)
+		for _, blockHash := range filemeta.BlockHashList {
+			fmt.Println("\t", blockHash)
+		}
+	}
+
+	fmt.Println("---------END PRINT MAP--------")
 
 }
