@@ -375,9 +375,12 @@ func (s *RaftSurfstore) commitEntry(serverIdx, entryIdx int64, commitChan chan *
 			s.matchIndex[serverIdx] = int(output.MatchedIndex)
 			return
 		} else {
-			if err == ERR_SERVER_CRASHED {
+			// The server is crashed
+			if err != nil {
 				continue // try until the server restore
 			}
+
+			// The previous entry doesn't match.
 			s.nextIndex[serverIdx] -= 1 // encounter a conflict
 		}
 	}

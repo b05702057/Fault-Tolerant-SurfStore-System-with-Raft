@@ -127,6 +127,8 @@ func TestRaftRecoverable(t *testing.T) {
 	//TEST
 	leaderIdx := 1
 	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
+	test.Clients[leaderIdx].SendHeartbeat(test.Context, &emptypb.Empty{})
+
 	test.Clients[0].Crash(test.Context, &emptypb.Empty{})
 	test.Clients[2].Crash(test.Context, &emptypb.Empty{})
 
@@ -137,6 +139,7 @@ func TestRaftRecoverable(t *testing.T) {
 		BlockHashList: nil,
 	}
 	go test.Clients[leaderIdx].UpdateFile(test.Context, filemeta1)
+	test.Clients[leaderIdx].SendHeartbeat(test.Context, &emptypb.Empty{})
 
 	// the crashed nodes recover.
 	test.Clients[0].Restore(test.Context, &emptypb.Empty{})
