@@ -88,7 +88,7 @@ func (surfClient *RPCClient) GetFileInfoMap(serverFileInfoMap *map[string]*FileM
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		fileInfoMap, err := c.GetFileInfoMap(ctx, &emptypb.Empty{})
-		if err == ErrNotLeader {
+		if err == ERR_NOT_LEADER {
 			continue // try next server
 		}
 		if err == nil {
@@ -96,7 +96,7 @@ func (surfClient *RPCClient) GetFileInfoMap(serverFileInfoMap *map[string]*FileM
 		}
 		return err
 	}
-	return ErrNotLeader // cannot find a leader at all (not possible in the test cases)
+	return ERR_NOT_LEADER // cannot find a leader at all (not possible in the test cases)
 }
 
 func (surfClient *RPCClient) UpdateFile(fileMetaData *FileMetaData, latestVersion *int32) error {
@@ -113,12 +113,12 @@ func (surfClient *RPCClient) UpdateFile(fileMetaData *FileMetaData, latestVersio
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		_, err = c.UpdateFile(ctx, fileMetaData)
-		if err == ErrNotLeader {
+		if err == ERR_NOT_LEADER {
 			continue // try next server
 		}
 		return err // nil or other errors
 	}
-	return ErrNotLeader // cannot find a leader at all (not possible in the test cases)
+	return ERR_NOT_LEADER // cannot find a leader at all (not possible in the test cases)
 }
 
 // GetBlockStoreAddr is a method from the MetaStore service
@@ -136,7 +136,7 @@ func (surfClient *RPCClient) GetBlockStoreAddr(blockStoreAddr *string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		addr, err := c.GetBlockStoreAddr(ctx, &emptypb.Empty{})
-		if err == ErrNotLeader {
+		if err == ERR_NOT_LEADER {
 			continue // try next server
 		}
 		if err == nil {
@@ -144,7 +144,7 @@ func (surfClient *RPCClient) GetBlockStoreAddr(blockStoreAddr *string) error {
 		}
 		return err
 	}
-	return ErrNotLeader
+	return ERR_NOT_LEADER
 }
 
 // This line guarantees all method for RPCClient are implemented

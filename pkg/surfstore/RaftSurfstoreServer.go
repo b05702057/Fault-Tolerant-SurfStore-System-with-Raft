@@ -68,7 +68,7 @@ func MajorityWork(s *RaftSurfstore, ctx context.Context, empty *emptypb.Empty) b
 func (s *RaftSurfstore) GetFileInfoMap(ctx context.Context, empty *emptypb.Empty) (*FileInfoMap, error) {
 	// check if the server is the leader
 	if !IsLeader(s) {
-		return nil, ErrNotLeader
+		return nil, ERR_NOT_LEADER
 	}
 
 	// check if a mjority of the nodes work
@@ -83,7 +83,7 @@ func (s *RaftSurfstore) GetFileInfoMap(ctx context.Context, empty *emptypb.Empty
 func (s *RaftSurfstore) GetBlockStoreAddr(ctx context.Context, empty *emptypb.Empty) (*BlockStoreAddr, error) {
 	// check if the server is the leader
 	if !IsLeader(s) {
-		return nil, ErrNotLeader
+		return nil, ERR_NOT_LEADER
 	}
 	return &BlockStoreAddr{Addr: s.metaStore.BlockStoreAddr}, nil
 }
@@ -91,7 +91,7 @@ func (s *RaftSurfstore) GetBlockStoreAddr(ctx context.Context, empty *emptypb.Em
 func (s *RaftSurfstore) UpdateFile(ctx context.Context, filemeta *FileMetaData) (*Version, error) {
 	// check if the server is the leader
 	if !IsLeader(s) {
-		return nil, ErrNotLeader
+		return nil, ERR_NOT_LEADER
 	}
 
 	// check of a mjority of the nodes work
@@ -139,7 +139,7 @@ func (s *RaftSurfstore) AppendEntries(ctx context.Context, input *AppendEntryInp
 	s.isCrashedMutex.Lock()
 	if s.isCrashed {
 		s.isCrashedMutex.Unlock()
-		return output, ErrServerCrashed
+		return output, ERR_SERVER_CRASHED
 	}
 	s.isCrashedMutex.Unlock()
 
@@ -200,7 +200,7 @@ func (s *RaftSurfstore) SetLeader(ctx context.Context, _ *emptypb.Empty) (*Succe
 	s.isCrashedMutex.Lock()
 	if s.isCrashed {
 		s.isCrashedMutex.Unlock()
-		return success, ErrServerCrashed
+		return success, ERR_SERVER_CRASHED
 	}
 	s.isCrashedMutex.Unlock()
 
@@ -233,13 +233,13 @@ func (s *RaftSurfstore) SendHeartbeat(ctx context.Context, _ *emptypb.Empty) (*S
 	s.isCrashedMutex.Lock()
 	if s.isCrashed {
 		s.isCrashedMutex.Unlock()
-		return success, ErrServerCrashed
+		return success, ERR_SERVER_CRASHED
 	}
 	s.isCrashedMutex.Unlock()
 
 	// The server is not a leader.
 	if !IsLeader(s) {
-		return success, ErrNotLeader
+		return success, ERR_NOT_LEADER
 	}
 
 	for idx := range s.ipList {
@@ -349,7 +349,7 @@ func (s *RaftSurfstore) commitEntry(serverIdx, entryIdx int64, commitChan chan *
 			s.matchIndex[serverIdx] = int(output.MatchedIndex)
 			return
 		} else {
-			if err == ErrServerCrashed {
+			if err == ERR_SERVER_CRASHED {
 				continue // try until the server restore
 			}
 			s.nextIndex[serverIdx] -= 1 // encounter a conflict
