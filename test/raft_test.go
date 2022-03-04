@@ -3,8 +3,9 @@ package SurfTest
 import (
 	context "context"
 	"cse224/proj5/pkg/surfstore"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	"testing"
+
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestRaftSetLeader(t *testing.T) {
@@ -21,6 +22,7 @@ func TestRaftSetLeader(t *testing.T) {
 	for _, server := range test.Clients {
 		server.SendHeartbeat(test.Context, &emptypb.Empty{})
 	}
+	// Only the leader would send the heartbeat eventually.
 
 	for idx, server := range test.Clients {
 		// all should have the leaders term
@@ -113,3 +115,45 @@ func TestRaftFollowersGetUpdates(t *testing.T) {
 		}
 	}
 }
+
+// leader1 gets several requests while all other nodes are crashed.
+// leader1 crashes.
+// all other nodes are restored.
+// leader2 gets a request.
+// leader1 is restored.
+// Result: Leader should have 2 log entries
+// func TestRaftLogsCorrectlyOverwritte(t *testing.T) {
+// 	//Setup
+// 	cfgPath := "./config_files/3nodes.txt"
+// 	test := InitTest(cfgPath, "8080")
+// 	defer EndTest(test)
+
+// 	//TEST
+// 	leaderIdx := 1
+// 	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
+// 	test.Clients[0].Crash(test.Context, &emptypb.Empty{})
+// 	test.Clients[2].Crash(test.Context, &emptypb.Empty{})
+
+// 	// leader1 gets several requests while all other nodes are crashed.
+// 	filemeta1 := &surfstore.FileMetaData{
+// 		Filename:      "testFile1",
+// 		Version:       1,
+// 		BlockHashList: nil,
+// 	}
+// 	go test.Clients[leaderIdx].UpdateFile(context.Background(), filemeta1)
+
+// 	filemeta2 := &surfstore.FileMetaData{
+// 		Filename:      "testFile2",
+// 		Version:       1,
+// 		BlockHashList: nil,
+// 	}
+// 	go test.Clients[leaderIdx].UpdateFile(context.Background(), filemeta2)
+
+// 	// leader1 crashes.
+// 	test.Clients[1].Crash(test.Context, &emptypb.Empty{})
+
+// 	// all other nodes are restored.
+// 	test.Clients[0].Restore(test.Context, &emptypb.Empty{})
+// 	test.Clients[2].Restore(test.Context, &emptypb.Empty{})
+
+// }

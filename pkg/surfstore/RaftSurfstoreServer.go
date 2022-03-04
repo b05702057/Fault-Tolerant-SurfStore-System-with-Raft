@@ -122,14 +122,6 @@ func (s *RaftSurfstore) UpdateFile(ctx context.Context, filemeta *FileMetaData) 
 	s.isCrashedMutex.Unlock()
 	// Note that a server may crash and still consider itself a leader.
 
-	// check of a mjority of the nodes work
-	for {
-		// block until a majority of the servers work
-		if MajorityWork(s, ctx, &emptypb.Empty{}) {
-			break
-		}
-	}
-
 	op := UpdateOperation{
 		Term:         s.term,
 		FileMetaData: filemeta,
@@ -143,7 +135,7 @@ func (s *RaftSurfstore) UpdateFile(ctx context.Context, filemeta *FileMetaData) 
 	go s.CommitEntries() // use go routine because the below channel would block until it is received (dead lock)
 
 	// The code resumes when it get the message.
-	success := <-commited
+	success := <-commited // block until a majority of nodes work
 	if success {
 		return s.metaStore.UpdateFile(ctx, filemeta)
 	}
