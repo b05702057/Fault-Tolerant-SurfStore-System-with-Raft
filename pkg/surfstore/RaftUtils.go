@@ -5,6 +5,7 @@ import (
 	//	"google.golang.org/grpc"
 	"io"
 	"log"
+
 	//	"net"
 	"os"
 	"strconv"
@@ -25,7 +26,7 @@ func LoadRaftConfigFile(filename string) (ipList []string) {
 	for index := 0; ; index++ {
 		lineContent, _, e := configReader.ReadLine()
 		if e != nil && e != io.EOF {
-			log.Fatal(SURF_CLIENT, "Error During Reading Config", e)
+			log.Fatal("Client:", "Error During Reading Config", e)
 		}
 
 		if e == io.EOF {
