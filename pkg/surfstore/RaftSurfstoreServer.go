@@ -336,11 +336,20 @@ func (s *RaftSurfstore) CommitEntries() {
 			}
 		}
 
+		if s.isCrashed {
+			close(commitChan)
+		}
+
 		commitCount := 1 // the leader itself
 		for {
-			commit := <-commitChan // get AppendEntryOutput
+			commit, ok := <-commitChan // get AppendEntryOutput
 			if commit != nil && commit.Success {
 				commitCount++
+			}
+
+			// The leader itself is crashed
+			if !ok { // closed channel
+				return
 			}
 
 			if commitCount > len(s.ipList)/2 { // committed
@@ -381,6 +390,10 @@ func (s *RaftSurfstore) commitEntry(serverIdx, entryIdx int64, commitChan chan *
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		output, err := client.AppendEntries(ctx, input)
+
+		if s.isCrashed {
+			return
+		}
 
 		// Update the state (s.nextIndex, etc)
 		if output != nil && output.Success { // nil if the follower crashes

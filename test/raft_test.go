@@ -210,6 +210,9 @@ func TestRaftLogsCorrectlyOverwrite(t *testing.T) {
 	// leader1 crashes.
 	test.Clients[1].Crash(test.Context, &emptypb.Empty{})
 
+	// Calling Sleep method to ensure the crash of leader1
+	time.Sleep(1 * time.Second)
+
 	// all other nodes are restored.
 	test.Clients[0].Restore(test.Context, &emptypb.Empty{})
 	test.Clients[2].Restore(test.Context, &emptypb.Empty{})
@@ -257,7 +260,6 @@ func TestRaftLogsCorrectlyOverwrite(t *testing.T) {
 			t.Fail()
 		}
 	}
-
 }
 
 // leader1 gets a request while the majority of the cluster is down.
