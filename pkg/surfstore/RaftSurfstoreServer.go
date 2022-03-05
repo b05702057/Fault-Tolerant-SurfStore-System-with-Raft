@@ -332,7 +332,7 @@ func (s *RaftSurfstore) CommitEntries() {
 
 			// There are entries to be commited
 			if targetIdx > int64(s.matchIndex[idx]) { // targetIdx >= server's nextIndex
-				go s.commitEntry(int64(idx), targetIdx, commitChan) // check if the entry is committed with the channel
+				go s.commitEntry(int64(idx), targetIdx, commitChan, s.commitIndex) // check if the entry is committed with the channel
 			}
 		}
 
@@ -353,7 +353,7 @@ func (s *RaftSurfstore) CommitEntries() {
 
 }
 
-func (s *RaftSurfstore) commitEntry(serverIdx, entryIdx int64, commitChan chan *AppendEntryOutput) {
+func (s *RaftSurfstore) commitEntry(serverIdx, entryIdx int64, commitChan chan *AppendEntryOutput, leaderCommit int64) {
 	// Set the target index
 	s.nextIndex[serverIdx] = int(entryIdx)
 
@@ -374,6 +374,7 @@ func (s *RaftSurfstore) commitEntry(serverIdx, entryIdx int64, commitChan chan *
 			PrevLogIndex: prevLogIndex,       // the log index immediately preceding new ones
 			PrevLogTerm:  int64(prevLogTerm), // the log term of the prvious entry
 			Entries:      s.log,              // the log entries of the leader
+			LeaderCommit: leaderCommit,
 		}
 
 		// Perform the call

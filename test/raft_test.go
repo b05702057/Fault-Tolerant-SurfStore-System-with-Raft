@@ -4,6 +4,7 @@ import (
 	context "context"
 	"cse224/proj5/pkg/surfstore"
 	"testing"
+	"time"
 
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
@@ -86,6 +87,7 @@ func TestRaftFollowersGetUpdates(t *testing.T) {
 	// TEST
 	leaderIdx := 0
 	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
+	test.Clients[leaderIdx].SendHeartbeat(test.Context, &emptypb.Empty{})
 
 	filemeta1 := &surfstore.FileMetaData{
 		Filename:      "testFile1",
@@ -93,7 +95,8 @@ func TestRaftFollowersGetUpdates(t *testing.T) {
 		BlockHashList: nil,
 	}
 
-	test.Clients[leaderIdx].UpdateFile(context.Background(), filemeta1)
+	test.Clients[leaderIdx].UpdateFile(test.Context, filemeta1)
+	test.Clients[leaderIdx].SendHeartbeat(test.Context, &emptypb.Empty{})
 
 	goldenMeta := surfstore.NewMetaStore("")
 	goldenMeta.UpdateFile(test.Context, filemeta1)
@@ -261,66 +264,66 @@ func TestRaftLogsCorrectlyOverwrite(t *testing.T) {
 // leader1 crashes.
 // the other nodes come back.
 // leader2 is elected
-// func TestRaftNewLeaderPushesUpdates(t *testing.T) {
-// 	//Setup
-// 	cfgPath := "./config_files/5nodes.txt"
-// 	test := InitTest(cfgPath, "8080")
-// 	defer EndTest(test)
+func TestRaftNewLeaderPushesUpdates(t *testing.T) {
+	//Setup
+	cfgPath := "./config_files/5nodes.txt"
+	test := InitTest(cfgPath, "8080")
+	defer EndTest(test)
 
-// 	// set the leader
-// 	leaderIdx := 1
-// 	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
-// 	test.Clients[leaderIdx].SendHeartbeat(test.Context, &emptypb.Empty{})
+	// set the leader
+	leaderIdx := 1
+	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
+	test.Clients[leaderIdx].SendHeartbeat(test.Context, &emptypb.Empty{})
 
-// 	// crash the servers
-// 	test.Clients[0].Crash(test.Context, &emptypb.Empty{})
-// 	test.Clients[3].Crash(test.Context, &emptypb.Empty{})
-// 	test.Clients[4].Crash(test.Context, &emptypb.Empty{})
+	// crash the servers
+	test.Clients[0].Crash(test.Context, &emptypb.Empty{})
+	test.Clients[3].Crash(test.Context, &emptypb.Empty{})
+	test.Clients[4].Crash(test.Context, &emptypb.Empty{})
 
-// 	// leader1 gets a request while the majority of the cluster is down.
-// 	filemeta1 := &surfstore.FileMetaData{
-// 		Filename:      "testFile1",
-// 		Version:       1,
-// 		BlockHashList: nil,
-// 	}
-// 	go test.Clients[leaderIdx].UpdateFile(test.Context, filemeta1)
+	// leader1 gets a request while the majority of the cluster is down.
+	filemeta1 := &surfstore.FileMetaData{
+		Filename:      "testFile1",
+		Version:       1,
+		BlockHashList: nil,
+	}
+	go test.Clients[leaderIdx].UpdateFile(test.Context, filemeta1)
 
-// 	// Calling Sleep method to ensure the progress of UpdateFile()
-// 	time.Sleep(1 * time.Second)
+	// Calling Sleep method to ensure the progress of UpdateFile()
+	time.Sleep(1 * time.Second)
 
-// 	// leader1 crashes.
-// 	test.Clients[1].Crash(test.Context, &emptypb.Empty{})
+	// leader1 crashes.
+	test.Clients[1].Crash(test.Context, &emptypb.Empty{})
 
-// 	// The nodes restore.
-// 	test.Clients[0].Restore(test.Context, &emptypb.Empty{})
-// 	test.Clients[3].Restore(test.Context, &emptypb.Empty{})
-// 	test.Clients[4].Restore(test.Context, &emptypb.Empty{})
+	// The nodes restore.
+	test.Clients[0].Restore(test.Context, &emptypb.Empty{})
+	test.Clients[3].Restore(test.Context, &emptypb.Empty{})
+	test.Clients[4].Restore(test.Context, &emptypb.Empty{})
 
-// 	// leader2 is elected.
-// 	leaderIdx = 2
-// 	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
-// 	test.Clients[leaderIdx].SendHeartbeat(test.Context, &emptypb.Empty{})
+	// leader2 is elected.
+	leaderIdx = 2
+	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
+	test.Clients[leaderIdx].SendHeartbeat(test.Context, &emptypb.Empty{})
 
-// 	// The log should be replicated but not applied
-// 	goldenMeta := surfstore.NewMetaStore("")
-// 	goldenLog := make([]*surfstore.UpdateOperation, 0)
-// 	goldenLog = append(goldenLog, &surfstore.UpdateOperation{
-// 		Term:         1,
-// 		FileMetaData: filemeta1,
-// 	})
+	// The log should be replicated but not applied
+	goldenMeta := surfstore.NewMetaStore("")
+	goldenLog := make([]*surfstore.UpdateOperation, 0)
+	goldenLog = append(goldenLog, &surfstore.UpdateOperation{
+		Term:         1,
+		FileMetaData: filemeta1,
+	})
 
-// 	for _, server := range test.Clients {
-// 		state, _ := server.GetInternalState(test.Context, &emptypb.Empty{})
-// 		t.Log(state.Log)
-// 		if !SameLog(goldenLog, state.Log) {
-// 			t.Log("Logs do not match")
-// 			t.Fail()
-// 		}
+	for _, server := range test.Clients {
+		state, _ := server.GetInternalState(test.Context, &emptypb.Empty{})
+		t.Log(state.Log)
+		if !SameLog(goldenLog, state.Log) {
+			t.Log("Logs do not match")
+			t.Fail()
+		}
 
-// 		t.Log(state.MetaMap.FileInfoMap)
-// 		if !SameMeta(goldenMeta.FileMetaMap, state.MetaMap.FileInfoMap) {
-// 			t.Log("MetaStore state is not correct")
-// 			t.Fail()
-// 		}
-// 	}
-// }
+		t.Log(state.MetaMap.FileInfoMap)
+		if !SameMeta(goldenMeta.FileMetaMap, state.MetaMap.FileInfoMap) {
+			t.Log("MetaStore state is not correct")
+			t.Fail()
+		}
+	}
+}
