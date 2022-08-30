@@ -1,4 +1,4 @@
-# Fault-Tolerant-SurfStore-System
+# Fault-Tolerant-SurfStore-System-with-Raft
 
 ### A fault-tolerant Dropbox-like system that can handle server crashes without losing any data by implementing the log replication technique in Raft
 
